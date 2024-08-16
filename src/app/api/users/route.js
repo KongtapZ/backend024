@@ -57,24 +57,48 @@ export async function POST(request) {
 
 export async function PUT(request) {
   try {
-    const { id, firstname, lastname, password } = await request.json();
+    // รับค่าที่ส่งมาจาก client-side
+    const { id, firstname, lastname, username, password } = await request.json();
+
+    // แฮชรหัสผ่าน
     const hashedPassword = await bcrypt.hash(password, 10);
-    const res = await client.query('UPDATE tbl_users SET firstname = $1, lastname = $2, password = $3 WHERE id = $4 RETURNING *', [firstname, lastname, hashedPassword, id]);
+
+    // อัปเดตข้อมูลในฐานข้อมูล
+    const res = await client.query(
+      'UPDATE tbl_users SET firstname = $1, lastname = $2, username = $3, password = $4 WHERE id = $5 RETURNING *',
+      [firstname, lastname, username, hashedPassword, id]
+    );
+
+    // ตรวจสอบว่าผลลัพธ์ของการอัปเดตมีแถวที่ถูกเปลี่ยนแปลงหรือไม่
     if (res.rows.length === 0) {
       return new Response(JSON.stringify({ error: 'User not found' }), {
         status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { 
+          'Access-Control-Allow-Origin': '*', 
+          'Content-Type': 'application/json' 
+        },
       });
     }
+
+    // ตอบกลับด้วยข้อมูลผู้ใช้ที่ถูกอัปเดต
     return new Response(JSON.stringify(res.rows[0]), {
       status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { 
+        'Access-Control-Allow-Origin': '*', 
+        'Content-Type': 'application/json' 
+      },
     });
+
   } catch (error) {
-    console.error(error);
+    console.error('Error during PUT request:', error);
+
+    // ตอบกลับเมื่อเกิดข้อผิดพลาด
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
       status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { 
+        'Access-Control-Allow-Origin': '*', 
+        'Content-Type': 'application/json' 
+      },
     });
   }
 }
