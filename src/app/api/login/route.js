@@ -77,11 +77,12 @@ export async function POST(request) {
 
     let token;
     try {
+      console.log('JWT_SECRET:', process.env.JWT_SECRET); // Debug JWT_SECRET value
       token = jwt.sign({ id: user.id, username: user.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
       console.log('Generated token:', token);
     } catch (error) {
       console.error('Error generating token:', error);
-      return new Response(JSON.stringify({ error: 'Token generation failed' }), {
+      return new Response(JSON.stringify({ error: 'Token generation failed', details: error.message }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
       });
