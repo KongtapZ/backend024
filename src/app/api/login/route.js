@@ -3,7 +3,7 @@ import { comparePassword } from '@/app/api/lib/auth';
 import { Client } from "pg";
 import dotenv from "dotenv";
 import bcrypt from 'bcrypt'; 
-import jwt from 'jsonwebtoken';
+import jwt from 'jsonwebtoken'; 
 
 dotenv.config();
 
