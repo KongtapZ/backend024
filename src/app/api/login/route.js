@@ -9,6 +9,7 @@ dotenv.config();
 
 const client = new Client({
   connectionString: process.env.DATABASE_URL,
+  connectionString: process.env.JWT_SECRET,
 });
 
 client.connect();
