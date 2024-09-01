@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { comparePassword } from '@/app/api/lib/auth';
 import { Client } from "pg";
 import dotenv from "dotenv";
 import bcrypt from 'bcrypt'; 
@@ -10,41 +11,13 @@ const client = new Client({
   connectionString: process.env.DATABASE_URL,
 });
 
-client.connect(err => {
-  if (err) {
-    console.error('Database connection error:', err.stack);
-  } else {
-    console.log('Database connected');
-  }
-});
+client.connect();
 
+// app/api/login/route.js
 export async function POST(request) {
   try {
-    let requestData;
-    try {
-      requestData = await request.json();
-      console.log('Request data:', requestData);
-    } catch (error) {
-      console.error('Error parsing JSON:', error);
-      return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    const { username, password } = requestData;
-    
-    let res;
-    try {
-      res = await client.query('SELECT * FROM tbl_users WHERE username = $1', [username]);
-      console.log('Database query result:', res.rows);
-    } catch (error) {
-      console.error('Database query error:', error);
-      return new Response(JSON.stringify({ error: 'Database query failed' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+    const { username, password } = await request.json();
+    const res = await client.query('SELECT * FROM tbl_users WHERE username = $1', [username]);
 
     if (res.rows.length === 0) {
       return new Response(JSON.stringify({ error: 'User not found' }), {
@@ -54,47 +27,30 @@ export async function POST(request) {
     }
 
     const user = res.rows[0];
-    console.log('User found:', user);
+    console.log(user);
+    const match = await bcrypt.compare(password, user.password);
+    console.log(match);
 
-    let match;
-    try {
-      match = await bcrypt.compare(password, user.password);
-      console.log('Password match:', match);
-    } catch (error) {
-      console.error('Error comparing passwords:', error);
-      return new Response(JSON.stringify({ error: 'Password comparison failed' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    if (!match) {
+    if (match != true) {
       return new Response(JSON.stringify({ error: 'Invalid password' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
       });
-    }
+    }else{
 
-    let token;
-    try {
-      console.log('JWT_SECRET:', process.env.JWT_SECRET); // Debug JWT_SECRET value
-      token = jwt.sign({ id: user.id, username: user.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
-      console.log('Generated token:', token);
-    } catch (error) {
-      console.error('Error generating token:', error);
-      return new Response(JSON.stringify({ error: 'Token generation failed', details: error.message }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+    // สมมติว่าเราสร้าง JWT สำหรับการล็อกอิน (สามารถใช้ library เช่น jsonwebtoken)
+    // Generate JWT token
+    const token = jwt.sign({ id: user.id, username: user.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
+    // ตัวอย่างนี้จะข้ามขั้นตอนการสร้าง JWT เพื่อความง่าย
     return new Response(JSON.stringify({ message: 'Login successful', user, token }), {
       status: 200,
       headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
     });
 
+    }
   } catch (error) {
-    console.error('Internal Server Error:', error.message, error.stack);
+    console.error(error);
     return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
       status: 500,
       headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' },
