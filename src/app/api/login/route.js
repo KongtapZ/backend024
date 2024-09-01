@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { comparePassword } from '../lib/auth';
+import { comparePassword } from '@/app/api/lib/auth';
 import { Client } from "pg";
 import dotenv from "dotenv";
 import bcrypt from 'bcrypt'; 
